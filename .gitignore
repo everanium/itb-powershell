@@ -1,0 +1,4 @@
+# The PowerShell binding is a script module — no compiled artefacts.
+# Only editor settings are filtered.
+.vscode/
+.idea/
