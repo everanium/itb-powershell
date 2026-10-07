@@ -14,6 +14,7 @@
         'New-ItbProfile'
         'Get-ItbProfile'
         'Get-ItbProfileName'
+        'Get-ItbHashName'
         'Register-ItbProfile'
         'New-ItbPipeline'
         'Import-ItbPipeline'
@@ -28,8 +29,13 @@
         'New-ItbEncryptStream'
         'New-ItbDecryptStream'
         'Get-ItbVersion'
+        'Get-ItbDrbgAutoTier'
         'Set-ItbMemoryLimit'
         'Set-ItbGCPercent'
+        'Set-ItbGOMAXPROCS'
+        'Write-ItbHeapProfile'
+        'Get-ItbPoolStatsLength'
+        'Get-ItbPoolStats'
     )
     CmdletsToExport      = @()
     VariablesToExport    = @()

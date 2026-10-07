@@ -1,4 +1,4 @@
-# Whole-buffer Stream throughput vs plaintext size (Streaming
+# One-shot stream throughput vs plaintext size (Streaming
 # Non-AEAD profile) at 1 MiB / 16 MiB / 64 MiB. Times
 # Pipeline.EncryptStreamOneShot / DecryptStreamOneShot, the single
 # FFI round-trip surface for callers holding the whole payload in

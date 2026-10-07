@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 #
-# run_tests.sh -- one-step test runner for the PowerShell binding.
-# Builds the C# peer via build.sh, points ITB_LIBITB3_PATH at the
-# freshly-built shared library, then invokes Pester over
-# Tests/Everanium.LibItb3.Tests. Positional arguments narrow the run to matching
-# test files (e.g. `./run_tests.sh Smoke StreamPump`).
+# One-step test runner for the PowerShell binding. Builds the C# peer via
+# build.sh, points ITB_LIBITB3_PATH at the freshly-built shared library, then
+# invokes Pester over Tests/Everanium.LibItb3.Tests. Positional arguments narrow
+# the run to matching test files (e.g. `./run_tests.sh Smoke StreamPump`).
 #
 # The test files are not compiled, so what has to be current is the C#
 # assembly they bind. build.sh delegates that to ../csharp/build.sh,

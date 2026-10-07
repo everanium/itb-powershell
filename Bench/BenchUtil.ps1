@@ -22,7 +22,7 @@ Set-StrictMode -Version Latest
 
 Import-Module (Join-Path $PSScriptRoot '../Everanium.LibItb3/Everanium.LibItb3.psd1') -Force
 
-# Bench-scale allocation churn leaks Go scratch heap unboundedly
+# Bench-scale allocation churn grows the Go scratch heap unboundedly
 # without a soft memory cap + aggressive GC; the return values report
 # the previous settings, not an error.
 [void](Set-ItbMemoryLimit -Bytes (4GB))

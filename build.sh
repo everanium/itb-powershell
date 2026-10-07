@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 #
-# build.sh -- one-step build for the PowerShell binding. The binding
-# itself has no compilation step (script module); this driver builds
-# the C# peer it proxies (libitb3.so + Everanium.LibItb3.dll via ../csharp/build.sh)
-# and then verifies the module and the eitb script both load cleanly
-# under pwsh. Prerequisites (Go, dotnet-sdk, pwsh 7.4+) must be
-# installed separately; see README.md "Prerequisites" section.
+# One-step build for the PowerShell binding. The binding itself has no compilation
+# step (script module); this driver builds the C# peer it proxies (libitb3.so +
+# Everanium.LibItb3.dll via ../csharp/build.sh) and then verifies the module and the
+# eitb script both load cleanly under pwsh. Prerequisites (Go, dotnet-sdk, pwsh
+# 7.4+) must be installed separately; see README.md "Prerequisites" section.
 #
 # Nothing here is compiled, so the only artefacts this binding owns are
 # Pester's test result output; those are removed first so no report can
@@ -107,5 +106,13 @@ pwsh -NoProfile -Command '
 # produced and exercises the script end to end.
 echo "==> verifying eitb script (pwsh)"
 pwsh -NoProfile -File eitb/eitb.ps1 version
+
+# The loop harness is a script as well, so the equivalent guarantee is a
+# two-iteration run: it imports the module, compiles its native shim,
+# constructs a Pipeline through the assembly the build just produced and
+# drives a worker runspace end to end.
+echo "==> verifying loop harness (pwsh)"
+pwsh -NoProfile -File loop/Main.ps1 --iterations 2 --shape message \
+    --payload-size 64KB --goroutines 1 >/dev/null
 
 echo "==> ready: ./run_tests.sh"

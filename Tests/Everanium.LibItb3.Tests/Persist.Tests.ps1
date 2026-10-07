@@ -77,11 +77,12 @@ Describe 'Persistence' {
             $prof.Name | Should -Be 'streaming-aead-triple-mac-v1'
             $prof.Mode | Should -Be 'streaming-aead'
             $prof.Width | Should -Be 512
-            # The recipe fields match the registry entry; the two
+            # The recipe fields match the registry entry; the
             # inspection-only fields separate the two records.
             $recipe = $prof.Clone()
             $recipe.NonceBits = $null
             $recipe.BarrierFill = $null
+            $recipe.ContainerMode = $null
             (Get-ItbProfile -Name 'streaming-aead-triple-mac-v1').ToJson() | Should -Be $recipe.ToJson()
         }
         finally { $pipe.Dispose() }
@@ -155,5 +156,85 @@ Describe 'Persistence' {
             (Test-BytesEqual $back $script:Plain) | Should -BeTrue
         }
         finally { $pipe.Dispose() }
+    }
+
+    It 'round-trips a drbg override through a loaded blob' {
+        foreach ($drbg in @('csprng', 'aesitb128')) {
+            $sender = New-ItbPipeline -Profile 'singlemsg-triple-mac-v1' -Opts @{ drbg = $drbg }
+            try {
+                $receiver = Import-ItbPipeline -Blob (Save-ItbPipeline $sender)
+                try {
+                    $back = Invoke-ItbDecrypt -Pipeline $receiver `
+                        -Data (Invoke-ItbEncrypt -Pipeline $sender -Data $script:Plain)
+                    (Test-BytesEqual $back $script:Plain) | Should -BeTrue
+                    $back = Invoke-ItbDecrypt -Pipeline $sender `
+                        -Data (Invoke-ItbEncrypt -Pipeline $receiver -Data $script:Plain)
+                    (Test-BytesEqual $back $script:Plain) | Should -BeTrue
+                }
+                finally { $receiver.Dispose() }
+            }
+            finally { $sender.Dispose() }
+        }
+    }
+
+    It 'reports the drbg on inspect' {
+        $pipe = New-ItbPipeline -Profile 'singlemsg-triple-mac-v1' -Opts @{ drbg = 'csprng' }
+        try {
+            $prof = Get-ItbProfile -Blob (Save-ItbPipeline $pipe)
+            $prof.Drbg | Should -Be 'csprng'
+            $prof.ToJson() | Should -BeLike '*"drbg":"csprng"*'
+        }
+        finally { $pipe.Dispose() }
+    }
+
+    It 'surfaces an unknown drbg as RecipePrimitiveUnknown' {
+        try {
+            New-ItbPipeline -Profile 'singlemsg-triple-mac-v1' -Opts @{ drbg = 'nope' }
+            throw 'expected ItbException'
+        }
+        catch [Everanium.Itb3.ItbException] {
+            $_.Exception.Status | Should -Be ([Everanium.Itb3.Status]::RecipePrimitiveUnknown)
+            $_.Exception.Message | Should -BeLike '*nope*'
+        }
+    }
+
+    It 'leaves the drbg absent by default' {
+        $pipe = New-ItbPipeline -Profile 'singlemsg-triple-mac-v1'
+        try {
+            $prof = Get-ItbProfile -Blob (Save-ItbPipeline $pipe)
+            $prof.Drbg | Should -Be ''
+            $prof.ToJson() | Should -Not -BeLike '*"drbg"*'
+        }
+        finally { $pipe.Dispose() }
+        $registry = Get-ItbProfile -Name 'singlemsg-triple-mac-v1'
+        $registry.Drbg | Should -Be ''
+        $registry.ToJson() | Should -Not -BeLike '*"drbg"*'
+    }
+
+    It 'keeps the drbg on a registered copy of an inspected profile' {
+        $pipe = New-ItbPipeline -Profile 'singlemsg-triple-mac-v1' -Opts @{ drbg = 'csprng' }
+        try {
+            # The drbg key is part of the recipe; only the inspection-only
+            # fields and the name are cleared before registering.
+            $copy = Get-ItbProfile -Blob (Save-ItbPipeline $pipe)
+            $copy.Name = ''
+            $copy.NonceBits = $null
+            $copy.BarrierFill = $null
+            $copy.ContainerMode = $null
+            Register-ItbProfile -Name 'pwsh-binding-test-drbg-copy' -Profile $copy
+        }
+        finally { $pipe.Dispose() }
+        (Get-ItbProfile -Name 'pwsh-binding-test-drbg-copy').Drbg | Should -Be 'csprng'
+        $sender = New-ItbPipeline -Profile 'pwsh-binding-test-drbg-copy'
+        try {
+            $receiver = Import-ItbPipeline -Blob (Save-ItbPipeline $sender)
+            try {
+                $back = Invoke-ItbDecrypt -Pipeline $receiver `
+                    -Data (Invoke-ItbEncrypt -Pipeline $sender -Data $script:Plain)
+                (Test-BytesEqual $back $script:Plain) | Should -BeTrue
+            }
+            finally { $receiver.Dispose() }
+        }
+        finally { $sender.Dispose() }
     }
 }

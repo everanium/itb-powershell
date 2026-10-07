@@ -1,11 +1,11 @@
 #!/usr/bin/env pwsh
-# eitb — command-line demonstrator for the ITB PowerShell binding.
+# Command-line demonstrator for the ITB PowerShell binding.
 #
 # Subcommands:
 #
-#   eitb.ps1 version                                   library + binding versions
-#   eitb.ps1 profiles                                  registered profile catalogue
-#   eitb.ps1 encrypt <profile> <in-file> <out-file>    Single Message encrypt
+#   eitb.ps1 version
+#   eitb.ps1 profiles
+#   eitb.ps1 encrypt <profile> <in-file> <out-file>
 #   eitb.ps1 decrypt <profile> <blob-hex> <in-file> <out-file>
 #
 # `encrypt` prints the session blob to stderr as hex; feed that hex
@@ -29,10 +29,10 @@ Import-Module (Join-Path $PSScriptRoot '../Everanium.LibItb3/Everanium.LibItb3.p
 
 function Show-Usage {
     [Console]::Error.WriteLine(@'
-usage: eitb.ps1 version
-       eitb.ps1 profiles
-       eitb.ps1 encrypt <profile> <in-file> <out-file>
-       eitb.ps1 decrypt <profile> <blob-hex> <in-file> <out-file>
+usage: eitb version
+       eitb profiles
+       eitb encrypt <profile> <in-file> <out-file>
+       eitb decrypt <profile> <blob-hex> <in-file> <out-file>
 '@)
     exit 2
 }

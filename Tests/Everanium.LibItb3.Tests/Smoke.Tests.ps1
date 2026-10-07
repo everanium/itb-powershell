@@ -47,4 +47,8 @@ Describe 'Smoke' {
         $v.CSharpBinding | Should -Not -BeNullOrEmpty
         $v.Module | Should -Not -BeNullOrEmpty
     }
+
+    It 'reports the auto DRBG tier as a fill cipher' {
+        Get-ItbDrbgAutoTier | Should -BeIn @('aes-256-ctr', 'chacha20')
+    }
 }
