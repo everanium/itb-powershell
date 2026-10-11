@@ -96,16 +96,19 @@ Describe 'Persistence' {
             $prof = Get-ItbProfile -Blob (Save-ItbPipeline $pipe)
             $prof.NonceBits | Should -Be 512
             $prof.BarrierFill | Should -Be 1
+            $prof.ContainerMode | Should -Be 1
         }
         finally { $pipe.Dispose() }
 
         # Per-Pipeline overrides travel through the blob into Inspect.
         $tuned = New-ItbPipeline -Profile 'streaming-aead-triple-mac-v1' `
-            -Opts @{ nonceBits = 256; barrierFill = 4 }
+            -Opts @{ mode = 2; nonceBits = 256; barrierFill = 4 }
         try {
             $prof = Get-ItbProfile -Blob (Save-ItbPipeline $tuned)
             $prof.NonceBits | Should -Be 256
             $prof.BarrierFill | Should -Be 4
+            $prof.ContainerMode | Should -Be 2
+            $prof.ToJson() | Should -BeLike '*"container_mode":2*'
             $prof.ToJson() | Should -BeLike '*"nonce_bits":256*'
             $prof.ToJson() | Should -BeLike '*"barrier_fill":4*'
         }
@@ -116,6 +119,8 @@ Describe 'Persistence' {
         $registry = Get-ItbProfile -Name 'streaming-aead-triple-mac-v1'
         $registry.NonceBits | Should -BeNullOrEmpty
         $registry.BarrierFill | Should -BeNullOrEmpty
+        $registry.ContainerMode | Should -BeNullOrEmpty
+        $registry.ToJson() | Should -Not -BeLike '*container_mode*'
         $registry.ToJson() | Should -Not -BeLike '*nonce_bits*'
         $registry.ToJson() | Should -Not -BeLike '*barrier_fill*'
     }

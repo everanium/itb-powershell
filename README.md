@@ -97,7 +97,7 @@ imports carries the resolved shape, so `Import-ItbPipeline` takes no
 opts:
 
 ```powershell
-$opts = @{ chunkSize = 65536; withWrapper = $false }
+$opts = @{ mode = 2; chunkSize = 65536; withWrapper = $false }
 $sender   = New-ItbPipeline -Profile 'singlemsg-triple-mac-v1' -Opts $opts
 $receiver = Import-ItbPipeline -Blob (Save-ItbPipeline $sender)
 ```
@@ -149,7 +149,7 @@ lowercase hex, arrays comma-joined) or as a prebuilt `[Everanium.Itb3.Opts]`:
 
 ```powershell
 $pipe = New-ItbPipeline -Profile 'streaming-aead-triple-mac-v1' `
-    -Opts @{ chunkSize = 65536; innerHash = 'blake3' }
+    -Opts @{ mode = 2; chunkSize = 65536; innerHash = 'blake3' }
 ```
 
 ## Persisting sessions

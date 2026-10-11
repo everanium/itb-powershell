@@ -430,6 +430,7 @@ function New-LoopPipeline {
     param([hashtable]$Cfg, [string]$Profile)
 
     $options = [ordered]@{
+        mode = (Format-LoopInt $Cfg.BlobMode)
         innerHash = $Cfg.Hash
         macName = $Cfg.Mac
         withParallax = $(if ($Cfg.Parallax) { 'true' } else { 'false' })
@@ -489,23 +490,6 @@ function New-LoopPipeline {
         return $null
     }
 
-    if ($Cfg.BlobMode -eq 2) {
-        # The sizing mode is not an Opts knob: the Init blob is edited
-        # and the pipeline reopened from it, so the retained blob (the
-        # one blob-cycle reopens from) carries the edited mode.
-        $pipe.Dispose()
-        try { $blob = Set-LoopInnerBlobMode $blob 2 }
-        catch {
-            Write-LoopError ('rewrite blob mode: ' + $_.Exception.Message)
-            return $null
-        }
-        try { $pipe = Import-ItbPipeline -Blob $blob }
-        catch {
-            Write-LoopError ('reload Mode 2 blob: ' + (Get-LoopErrorDetail $_))
-            return $null
-        }
-    }
-
     Write-LoopPipelineInitialised $Profile $blob
     return @{ Pipe = $pipe; Blob = $blob }
 }
@@ -544,40 +528,6 @@ function Write-LoopPipelineInitialised {
         ' wrapper=' + (Format-LoopOnOff $rec.Wrapper) +
         $(if ($rec.ContainerMode -eq 2) { ' container-mode=2' } else { '' }) +
         $(if (-not [string]::IsNullOrEmpty($rec.Drbg)) { ' drbg=' + $rec.Drbg } else { '' }))
-}
-
-function Set-LoopInnerBlobMode {
-    <#
-    .SYNOPSIS
-    Returns a copy of a session blob with the inner blob's sizing mode set.
-    .DESCRIPTION
-    The inner blob ("ib") of a wrap-layer session blob carries the
-    container floor sizing mode (1 = per-region, 2 = per-container). The
-    wrap layer's profile record carries its own "mode" (a string), so
-    only the inner blob's integer field is set; no key is added, integers
-    keep their literals, and strings are written without escaping the
-    base64 alphabet.
-    #>
-    param([byte[]]$Blob, [int]$Mode)
-
-    $root = [System.Text.Json.Nodes.JsonNode]::Parse([System.Text.Encoding]::UTF8.GetString($Blob))
-    if ($root -isnot [System.Text.Json.Nodes.JsonObject]) {
-        throw [System.FormatException]::new('session blob is not a JSON object')
-    }
-    $ib = $root['ib']
-    if ($ib -isnot [System.Text.Json.Nodes.JsonObject] -or -not $ib.ContainsKey('mode')) {
-        throw [System.FormatException]::new('inner blob mode field not found')
-    }
-    $ib['mode'] = [System.Text.Json.Nodes.JsonValue]::Create([int]$Mode)
-    $buf = [System.IO.MemoryStream]::new()
-    try {
-        $options = [System.Text.Json.JsonWriterOptions]::new()
-        $options.Encoder = [System.Text.Encodings.Web.JavaScriptEncoder]::UnsafeRelaxedJsonEscaping
-        $w = [System.Text.Json.Utf8JsonWriter]::new([System.IO.Stream]$buf, $options)
-        try { $root.WriteTo($w) } finally { $w.Dispose() }
-        return ,$buf.ToArray()
-    }
-    finally { $buf.Dispose() }
 }
 
 # ----------------------------------------------------------------------
