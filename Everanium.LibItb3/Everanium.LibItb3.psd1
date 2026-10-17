@@ -2,7 +2,7 @@
 
 @{
     RootModule           = 'Everanium.LibItb3.psm1'
-    ModuleVersion        = '0.7.2'
+    ModuleVersion        = '0.7.3'
     GUID                 = 'ac3aa715-a34c-46de-906f-51d29510463b'
     Author               = 'Andrey Kuvshinov <andrew@encloud.blue>'
     Copyright            = '(c) 2026 Andrey Kuvshinov'
@@ -17,6 +17,7 @@
         'Get-ItbHashName'
         'Register-ItbProfile'
         'New-ItbPipeline'
+        'New-ItbPipelineKeys'
         'Import-ItbPipeline'
         'Save-ItbPipeline'
         'Set-ItbMaxWorkers'

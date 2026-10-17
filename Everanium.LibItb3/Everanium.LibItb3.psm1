@@ -346,6 +346,42 @@ function New-ItbPipeline {
     }
 }
 
+function New-ItbPipelineKeys {
+    <#
+    .SYNOPSIS
+    Deterministically constructs a Pipeline from eight caller-supplied
+    master keys (one per canonical seed slot 0..7) against the named
+    profile and options.
+    .DESCRIPTION
+    Wraps [Everanium.Itb3.Pipeline]::InitKeys. The eight master keys
+    must come from independent entropy or key-agreement sources; never
+    derive all eight keys from a single secret or a single KDF parent
+    key.
+    .EXAMPLE
+    $pipe = New-ItbPipelineKeys -Profile 'singlemsg-triple-mac-v1' -Masters $masters
+    #>
+    [CmdletBinding()]
+    [OutputType([Everanium.Itb3.Pipeline])]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [string]$Profile,
+
+        [Parameter(Mandatory, Position = 1)]
+        [AllowEmptyCollection()]
+        [byte[][]]$Masters,
+
+        [Parameter(Position = 2)]
+        [object]$Opts
+    )
+    try {
+        [Everanium.Itb3.Pipeline]::InitKeys($Profile, (Script:ConvertTo-ItbOpts $Opts), $Masters)
+    }
+    catch [System.Management.Automation.MethodInvocationException] {
+        throw (Script:Get-ItbInnerException $_)
+    }
+}
+
+
 function Import-ItbPipeline {
     <#
     .SYNOPSIS
@@ -929,6 +965,7 @@ Export-ModuleMember -Function @(
     'Get-ItbHashName'
     'Register-ItbProfile'
     'New-ItbPipeline'
+    'New-ItbPipelineKeys'
     'Import-ItbPipeline'
     'Save-ItbPipeline'
     'Set-ItbMaxWorkers'

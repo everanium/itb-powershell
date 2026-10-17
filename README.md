@@ -16,7 +16,7 @@ through to Go for validation; the binding carries no ITB
 construction logic.
 
 The public surface is a Verb-Noun cmdlet set over the C# `Pipeline`
-type: `New-ItbPipeline` / `Import-ItbPipeline` / `Save-ItbPipeline` /
+type: `New-ItbPipeline` / `New-ItbPipelineKeys` / `Import-ItbPipeline` / `Save-ItbPipeline` /
 `Invoke-ItbRekey` / `Set-ItbMaxWorkers` / `Close-ItbPipeline` for the
 session, `Get-ItbProfile` / `Get-ItbProfileName` / `New-ItbProfile` /
 `Register-ItbProfile` for the profile registry and blob inspection,
@@ -101,6 +101,8 @@ $opts = @{ mode = 2; chunkSize = 65536; withWrapper = $false }
 $sender   = New-ItbPipeline -Profile 'singlemsg-triple-mac-v1' -Opts $opts
 $receiver = Import-ItbPipeline -Blob (Save-ItbPipeline $sender)
 ```
+
+`New-ItbPipelineKeys` constructs a `Pipeline` deterministically from eight caller-supplied master keys (one per seed slot `0..7`) via per-slot KDF, so two peers holding the same eight master keys derive identical `Pipeline` instances without exchanging a session blob. The eight master keys must come from independent entropy or key-agreement sources — never derive all eight keys from a single secret or a single KDF parent key.
 
 `Invoke-ItbRekey` rotates the parallax + wrapper masters mid-session
 (the eight ITB seeds and MAC key are fixed for the session lifetime

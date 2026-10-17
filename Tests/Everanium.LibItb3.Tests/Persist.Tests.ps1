@@ -242,4 +242,49 @@ Describe 'Persistence' {
         }
         finally { $sender.Dispose() }
     }
+
+    It 'constructs deterministically with New-ItbPipelineKeys and validates keys' {
+        $masters = [byte[][]]::new(8)
+        for ($i = 0; $i -lt 8; $i++) {
+            $k = [byte[]]::new(32)
+            [Array]::Fill($k, [byte](0x11 * ($i + 1)))
+            $masters[$i] = $k
+        }
+
+        $p1 = New-ItbPipelineKeys -Profile 'singlemsg-triple-mac-v1' -Masters $masters
+        try {
+            $p2 = New-ItbPipelineKeys -Profile 'singlemsg-triple-mac-v1' -Masters $masters
+            try {
+                (Test-BytesEqual (Save-ItbPipeline $p1) (Save-ItbPipeline $p2)) | Should -BeTrue
+                $wire = Invoke-ItbEncrypt -Pipeline $p1 -Data $script:Plain
+                $back = Invoke-ItbDecrypt -Pipeline $p2 -Data $wire
+                (Test-BytesEqual $back $script:Plain) | Should -BeTrue
+            }
+            finally { $p2.Dispose() }
+        }
+        finally { $p1.Dispose() }
+
+        $dup = [byte[][]]$masters.Clone()
+        $dup[1] = $dup[0]
+        try {
+            New-ItbPipelineKeys -Profile 'singlemsg-triple-mac-v1' -Masters $dup
+            throw 'expected ItbException'
+        }
+        catch [Everanium.Itb3.ItbException] {
+            $_.Exception.Status | Should -Be ([Everanium.Itb3.Status]::BadInput)
+        }
+
+        $shortKeys = [byte[][]]$masters.Clone()
+        $shortKey = [byte[]]::new(8)
+        [Array]::Fill($shortKey, [byte]0x11)
+        $shortKeys[0] = $shortKey
+        try {
+            New-ItbPipelineKeys -Profile 'singlemsg-triple-mac-v1' -Masters $shortKeys
+            throw 'expected ItbException'
+        }
+        catch [Everanium.Itb3.ItbException] {
+            $_.Exception.Status | Should -Be ([Everanium.Itb3.Status]::BadInput)
+        }
+    }
 }
+
