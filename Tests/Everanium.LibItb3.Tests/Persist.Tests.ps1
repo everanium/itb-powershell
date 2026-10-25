@@ -286,5 +286,57 @@ Describe 'Persistence' {
             $_.Exception.Status | Should -Be ([Everanium.Itb3.Status]::BadInput)
         }
     }
+
+    It 'round-trips an interlock override through a loaded blob and reports it on inspect' {
+        $sender = New-ItbPipeline -Profile 'singlemsg-triple-mac-v1' -Opts @{ interlock = '168' }
+        try {
+            $wire = Invoke-ItbEncrypt -Pipeline $sender -Data $script:Plain
+            (Test-BytesEqual (Invoke-ItbDecrypt -Pipeline $sender -Data $wire) $script:Plain) | Should -BeTrue
+            $blob = Save-ItbPipeline $sender
+            $prof = Get-ItbProfile -Blob $blob
+            $prof.Interlock | Should -Be '168'
+            $prof.ToJson() | Should -BeLike '*"interlock":"168"*'
+            $receiver = Import-ItbPipeline -Blob $blob
+            try {
+                (Test-BytesEqual (Invoke-ItbDecrypt -Pipeline $receiver -Data $wire) $script:Plain) | Should -BeTrue
+                $back = Invoke-ItbDecrypt -Pipeline $sender `
+                    -Data (Invoke-ItbEncrypt -Pipeline $receiver -Data $script:Plain)
+                (Test-BytesEqual $back $script:Plain) | Should -BeTrue
+            }
+            finally { $receiver.Dispose() }
+        }
+        finally { $sender.Dispose() }
+    }
+
+    It 'leaves the interlock absent by default' {
+        $pipe = New-ItbPipeline -Profile 'singlemsg-triple-mac-v1'
+        try {
+            $prof = Get-ItbProfile -Blob (Save-ItbPipeline $pipe)
+            $prof.Interlock | Should -Be ''
+            $prof.ToJson() | Should -Not -BeLike '*"interlock"*'
+        }
+        finally { $pipe.Dispose() }
+        $registry = Get-ItbProfile -Name 'singlemsg-triple-mac-v1'
+        $registry.Interlock | Should -Be ''
+        $registry.ToJson() | Should -Not -BeLike '*"interlock"*'
+    }
+
+    It 'rejects invalid interlock and 256-bit hash with interlock=168 as BadInput' {
+        try {
+            New-ItbPipeline -Profile 'singlemsg-triple-mac-v1' -Opts @{ innerHash = 'blake3'; interlock = '168' }
+            throw 'expected ItbException'
+        }
+        catch [Everanium.Itb3.ItbException] {
+            $_.Exception.Status | Should -Be ([Everanium.Itb3.Status]::BadInput)
+        }
+
+        try {
+            New-ItbPipeline -Profile 'singlemsg-triple-mac-v1' -Opts @{ interlock = '96' }
+            throw 'expected ItbException'
+        }
+        catch [Everanium.Itb3.ItbException] {
+            $_.Exception.Status | Should -Be ([Everanium.Itb3.Status]::BadInput)
+        }
+    }
 }
 

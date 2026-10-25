@@ -71,6 +71,8 @@ $script:LoopFlags = @(
        Help = 'concurrent workers (1..10); on runtimes without parallelism values above 1 are clamped to 1' }
     @{ Name = 'hash'; Type = 'string'; Kind = 'string'; Default = 'areion512'
        Help = 'inner ITB hash primitive name' }
+    @{ Name = 'interlock'; Type = 'string'; Kind = 'string'; Default = ''
+       Help = 'Interlocked Barrier chunk width: 48 | 168; empty = profile default (48; 168 requires 512-bit hash)' }
     @{ Name = 'iterations'; Type = 'int'; Kind = 'int'; Default = 0; NoDefault = $true
        Help = 'fixed per-worker iteration count; 0 = duration-based' }
     @{ Name = 'json-output'; Type = ''; Kind = 'bool'; Default = $false
@@ -356,6 +358,10 @@ function Read-LoopConfig {
                         (Format-LoopInt $raw['barrier-fill'])))
     }
     # --drbg is validated by Init: the C ABI enumerates no DRBG names.
+    if (@('', '48', '168') -notcontains [string]$raw['interlock']) {
+        return (& $bad ('--interlock must be 48 | 168 (or empty = profile default), got "' +
+                        $raw['interlock'] + '"'))
+    }
 
     $chunkSize = Convert-LoopSize $raw['chunk-size']
     if ($null -eq $chunkSize) {
@@ -400,6 +406,7 @@ function Read-LoopConfig {
             ChunkSize = [long]$chunkSize
             BarrierFill = [long]$raw['barrier-fill']
             Drbg = [string]$raw['drbg']
+            Interlock = [string]$raw['interlock']
             Gomaxprocs = [int]$raw['gomaxprocs']
             RekeyEvery = [long]$raw['rekey-every']
             BlobCycleEvery = [long]$raw['blob-cycle-every']
@@ -439,6 +446,7 @@ function New-LoopPipeline {
         nonceBits = (Format-LoopInt $Cfg.NonceBits)
         barrierFill = (Format-LoopInt $Cfg.BarrierFill)
         drbg = $Cfg.Drbg
+        interlock = $Cfg.Interlock
         chunkSize = (Format-LoopInt $Cfg.ChunkSize)
     }
 
@@ -527,7 +535,8 @@ function Write-LoopPipelineInitialised {
         ' parallax=' + (Format-LoopOnOff $rec.Parallax) +
         ' wrapper=' + (Format-LoopOnOff $rec.Wrapper) +
         $(if ($rec.ContainerMode -eq 2) { ' container-mode=2' } else { '' }) +
-        $(if (-not [string]::IsNullOrEmpty($rec.Drbg)) { ' drbg=' + $rec.Drbg } else { '' }))
+        $(if (-not [string]::IsNullOrEmpty($rec.Drbg)) { ' drbg=' + $rec.Drbg } else { '' }) +
+        $(if (-not [string]::IsNullOrEmpty($rec.Interlock)) { ' interlock=' + $rec.Interlock } else { '' }))
 }
 
 # ----------------------------------------------------------------------
@@ -593,7 +602,8 @@ function Invoke-LoopRun {
         ' seed=' + ([uint64]$cfg.Seed).ToString([System.Globalization.CultureInfo]::InvariantCulture) +
         ' json-output=' + $(if ($cfg.JsonOutput) { 'true' } else { 'false' }) +
         $(if ($cfg.BlobMode -ne 1) { ' blob-mode=' + (Format-LoopInt $cfg.BlobMode) } else { '' }) +
-        $(if ($cfg.Drbg.Length -gt 0) { ' drbg=' + $cfg.Drbg } else { '' }))
+        $(if ($cfg.Drbg.Length -gt 0) { ' drbg=' + $cfg.Drbg } else { '' }) +
+        $(if ($cfg.Interlock.Length -gt 0) { ' interlock=' + $cfg.Interlock } else { '' }))
     Write-LoopLine ('policy: microbatch-tiers=' + (Get-LoopPolicyLabel 'ITB_MICROBATCH_TIERS') +
         ' hashpool-starters=' + (Get-LoopPolicyLabel 'ITB_HASHPOOL_STARTERS'))
 

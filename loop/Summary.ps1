@@ -249,6 +249,7 @@ function Write-LoopFinalSummary {
         & $add (',"blob_mode":' + (Format-LoopInt $cfg.BlobMode))
         & $add (',"drbg":' + (ConvertTo-LoopJsonString $cfg.Drbg))
         & $add (',"drbg_auto_tier":' + (ConvertTo-LoopJsonString (Get-ItbDrbgAutoTier)))
+        & $add (',"interlock":' + (ConvertTo-LoopJsonString $cfg.Interlock))
         & $add (',"chunk_size_bytes":' + (Format-LoopInt $cfg.ChunkSize))
         & $add (',"barrier_fill":' + (Format-LoopInt $cfg.BarrierFill))
         & $add (',"parallax":"' + (Format-LoopOnOff $cfg.Parallax) + '"')

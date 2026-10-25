@@ -92,12 +92,12 @@ Close-ItbPipeline $receiver
 
 Opts override the profile default at `New-ItbPipeline` (chunk size,
 outer cipher, parallax on/off, wrapper on/off, MAC name, palette,
-`maxWorkers`) as a hashtable passed to `-Opts`; the blob the receiver
+`interlock`, `maxWorkers`) as a hashtable passed to `-Opts`; the blob the receiver
 imports carries the resolved shape, so `Import-ItbPipeline` takes no
 opts:
 
 ```powershell
-$opts = @{ mode = 2; chunkSize = 65536; withWrapper = $false }
+$opts = @{ mode = 2; interlock = '168'; chunkSize = 65536; withWrapper = $false }
 $sender   = New-ItbPipeline -Profile 'singlemsg-triple-mac-v1' -Opts $opts
 $receiver = Import-ItbPipeline -Blob (Save-ItbPipeline $sender)
 ```
