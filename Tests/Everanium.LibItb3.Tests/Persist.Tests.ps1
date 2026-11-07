@@ -1,4 +1,4 @@
-# Session persistence surface: Save-ItbPipeline / Import-ItbPipeline
+﻿# Session persistence surface: Save-ItbPipeline / Import-ItbPipeline
 # (bytes and -Path), Get-ItbProfile (-Name / -Blob),
 # Get-ItbProfileName, Register-ItbProfile with a record,
 # Set-ItbMaxWorkers clamping.
@@ -113,6 +113,14 @@ Describe 'Persistence' {
             $prof.ToJson() | Should -BeLike '*"barrier_fill":4*'
         }
         finally { $tuned.Dispose() }
+
+        $tuned3 = New-ItbPipeline -Profile 'streaming-aead-triple-mac-v1' -Opts @{ mode = 3 }
+        try {
+            $prof3 = Get-ItbProfile -Blob (Save-ItbPipeline $tuned3)
+            $prof3.ContainerMode | Should -Be 3
+            $prof3.ToJson() | Should -BeLike '*"container_mode":3*'
+        }
+        finally { $tuned3.Dispose() }
 
         # The registry entry is the recipe alone — neither field is
         # part of it, so both read as absent rather than as zero.

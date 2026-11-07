@@ -1,4 +1,4 @@
-# Long-run stress harness. The loop utility holds one Pipeline handle per
+﻿# Long-run stress harness. The loop utility holds one Pipeline handle per
 # exercised cipher surface for minutes, hammers it with concurrent
 # encrypt -> decrypt -> compare round-trips from N workers, rotates the
 # outer masters and reopens the handle from its session blob on a
@@ -56,7 +56,7 @@ $script:LoopFlags = @(
     @{ Name = 'blob-cycle-every'; Type = 'int'; Kind = 'int'; Default = 0; NoDefault = $true
        Help = 'reopen each pipeline from its session blob every N iterations per worker; 0 = never' }
     @{ Name = 'blob-mode'; Type = 'int'; Kind = 'int'; Default = 1
-       Help = 'container floor sizing mode: 1 (per-region, default) | 2 (per-container)' }
+       Help = 'container floor sizing mode: 1 (per-region, default) | 2 (per-container) | 3 (gauss-posit)' }
     @{ Name = 'chunk-size'; Type = 'string'; Kind = 'string'; Default = '0'
        Help = 'streaming chunk-size budget (e.g. 4MB); 0 = profile default; inert for pure message shape' }
     @{ Name = 'drbg'; Type = 'string'; Kind = 'string'; Default = ''
@@ -349,8 +349,8 @@ function Read-LoopConfig {
         return (& $bad ('--nonce-bits must be 128 | 256 | 512 (or 0 = profile default), got ' +
                         (Format-LoopInt $raw['nonce-bits'])))
     }
-    if (@(1, 2) -notcontains $raw['blob-mode']) {
-        return (& $bad ('--blob-mode must be 1 (per-region) | 2 (per-container), got ' +
+    if (@(1, 2, 3) -notcontains $raw['blob-mode']) {
+        return (& $bad ('--blob-mode must be 1 (per-region) | 2 (per-container) | 3 (gauss-posit), got ' +
                         (Format-LoopInt $raw['blob-mode'])))
     }
     if (@(0, 1, 2, 4, 8, 16, 32) -notcontains $raw['barrier-fill']) {
@@ -534,7 +534,7 @@ function Write-LoopPipelineInitialised {
         ' mac=' + (& $dash $rec.Mac) +
         ' parallax=' + (Format-LoopOnOff $rec.Parallax) +
         ' wrapper=' + (Format-LoopOnOff $rec.Wrapper) +
-        $(if ($rec.ContainerMode -eq 2) { ' container-mode=2' } else { '' }) +
+        $(if ($rec.ContainerMode -eq 2 -or $rec.ContainerMode -eq 3) { ' container-mode=' + (Format-LoopInt ([long]$rec.ContainerMode)) } else { '' }) +
         $(if (-not [string]::IsNullOrEmpty($rec.Drbg)) { ' drbg=' + $rec.Drbg } else { '' }) +
         $(if (-not [string]::IsNullOrEmpty($rec.Interlock)) { ' interlock=' + $rec.Interlock } else { '' }))
 }
